@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-engine-service
+  namespace: kube-ai
+spec:
+  selector:
+    app: ai-engine
+  ports:
+    - port: 8001
+      targetPort: 8001

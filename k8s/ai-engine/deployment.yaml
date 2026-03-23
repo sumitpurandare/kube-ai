@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: ai-engine
-        image: ai-engine:v1
+        image: ai-engine:v2
         imagePullPolicy: Never
         ports:
         - containerPort: 8001

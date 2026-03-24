@@ -1,17 +1,27 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from analyzer import analyze_log
+from analyzer import analyze_log   # ✅ FIXED
+import os
+print("🔥 RUNNING FILE:", __file__)
 
-app = FastAPI()
+print("🔥 THIS MAIN.PY IS RUNNING")
+
+app = FastAPI(title="🔥 SUMIT FINAL SERVER 🔥", version="999.0.0")
 
 class LogRequest(BaseModel):
-    log: str
+    logs: str
 
-@app.get("/")
-def health():
-    return {"status": "ai-engine running"}
+print("🔥 MODEL FIELDS:", LogRequest.model_fields)
 
 @app.post("/analyze")
-def analyze(request: LogRequest):
-    result = analyze_log(request.log)
-    return {"analysis": result}
+def analyze(req: LogRequest):
+    print("🔥 RECEIVED:", req.logs)
+    result = analyze_log(req.logs)
+    return {
+        "issue": result.get("summary", "Unknown"),
+        "root_cause": result.get("root_cause", "Not identified"),
+        "fix": result.get("priority_action", "No suggestion available"),
+        "confidence": 90 if result.get("severity") == "critical" else 70
+    }
+for route in app.routes:
+    print("🔥 ROUTE:", route.path, route.name)

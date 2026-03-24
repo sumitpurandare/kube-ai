@@ -1,10 +1,12 @@
 import requests
 
-AI_ENGINE_URL = "http://ai-engine-service:8001/analyze"
+AI_ENGINE_URL = "http://localhost:8001/analyze"
 
-def analyze_log(log_text: str):
+def call_ai_engine(logs: str):
     response = requests.post(
         AI_ENGINE_URL,
-        json={"log": log_text}
+        json={"logs": logs},
+        timeout=10
     )
+    response.raise_for_status()
     return response.json()

@@ -1,10 +1,13 @@
-from fastapi import APIRouter, UploadFile
-from services.ai_service import analyze_log
+from fastapi import FastAPI
+from pydantic import BaseModel
+from services.ai_client import call_ai_engine
 
-router = APIRouter()
+app = FastAPI()
 
-@router.post("/analyze")
-async def analyze(file: UploadFile):
-    content = await file.read()
-    result = analyze_log(content.decode())
-    return {"result": result}
+class LogRequest(BaseModel):
+    logs: str
+
+@app.post("/analyze")
+def analyze(req: LogRequest):
+    result = call_ai_engine(req.logs)
+    return result

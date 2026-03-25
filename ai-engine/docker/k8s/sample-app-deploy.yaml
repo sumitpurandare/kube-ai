@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sample-fastapi
+  namespace: kube-ai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sample-fastapi
+  template:
+    metadata:
+      labels:
+        app: sample-fastapi
+    spec:
+      containers:
+      - name: sample-fastapi
+        image: sample-fastapi:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sample-fastapi-svc
+  namespace: kube-ai
+spec:
+  type: NodePort
+  selector:
+    app: sample-fastapi
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000

@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
       - name: sample-fastapi
-        image: sample-fastapi:latest
-        imagePullPolicy: IfNotPresent
+        image: sample-fastapi:v2
+        imagePullPolicy: Never
         ports:
         - containerPort: 8000
 ---

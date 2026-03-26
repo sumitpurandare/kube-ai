@@ -3,10 +3,10 @@ import logging
 
 app = FastAPI()
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+logging.basicConfig(level=logging.INFO)
 
 @app.get("/")
 def read_root():
     logging.info("Root endpoint called")
-    logging.error("Sample error log")
+    logging.error("🔥 TEST ERROR FROM SAMPLE APP 🔥")  # ✅ THIS MUST BE HERE
     return {"message": "Hello, K8s Logs!"}

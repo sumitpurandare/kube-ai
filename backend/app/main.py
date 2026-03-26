@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routes import analyze
+from app.routes import analyze   # ✅ correct path
 
 app = FastAPI()
 

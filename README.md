@@ -32,10 +32,9 @@ AI Insight:
 - Fix: Check logs and stack trace  
 
 ---
-
 ## 📂 Project Structure
 
-```
+```text
 kube-ai/
 ├── ai-engine/
 │   ├── app/

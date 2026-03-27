@@ -1,0 +1,9 @@
+Metadata-Version: 2.4
+Name: kube-ai-analyzer
+Version: 0.1.0
+Summary: AI-powered Kubernetes log analyzer
+Author: Sumit Purandare
+Requires-Python: >=3.8
+Dynamic: author
+Dynamic: requires-python
+Dynamic: summary

@@ -1,0 +1,2 @@
+[console_scripts]
+kube-ai = kube_ai_analyzer.cli:main

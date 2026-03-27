@@ -1,0 +1,11 @@
+README.md
+setup.py
+kube_ai_analyzer/__init__.py
+kube_ai_analyzer/analyzer.py
+kube_ai_analyzer/cli.py
+kube_ai_analyzer/parser.py
+kube_ai_analyzer.egg-info/PKG-INFO
+kube_ai_analyzer.egg-info/SOURCES.txt
+kube_ai_analyzer.egg-info/dependency_links.txt
+kube_ai_analyzer.egg-info/entry_points.txt
+kube_ai_analyzer.egg-info/top_level.txt

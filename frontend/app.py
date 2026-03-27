@@ -1,33 +1,31 @@
 import streamlit as st
-import subprocess
 import requests
-from src.services.api import analyze_logs  # old flow (kept)
+
+BACKEND_URL = "http://127.0.0.1:8000"
 
 st.set_page_config(page_title="K8s AI Analyzer", layout="wide")
 
 # -----------------------
-# Helper functions
+# API Helpers
 # -----------------------
 def get_namespaces():
-    result = subprocess.run(
-        ["kubectl", "get", "ns", "-o", "jsonpath={.items[*].metadata.name}"],
-        capture_output=True, text=True
-    )
-    return result.stdout.split() if result.stdout else []
+    try:
+        res = requests.get(f"{BACKEND_URL}/namespaces")
+        return res.json().get("namespaces", [])
+    except:
+        st.error("❌ Backend not reachable")
+        return []
 
-def get_pods(namespace: str):
-    result = subprocess.run(
-        ["kubectl", "get", "pods", "-n", namespace, "-o", "jsonpath={.items[*].metadata.name}"],
-        capture_output=True, text=True
-    )
-    return result.stdout.split() if result.stdout else []
 
-def fetch_logs(pod: str, namespace: str):
-    result = subprocess.run(
-        ["kubectl", "logs", pod, "-n", namespace],
-        capture_output=True, text=True
-    )
-    return result.stdout if result.stdout else "No logs found"
+def fetch_data(namespace):
+    try:
+        url = f"{BACKEND_URL}/analyze-namespace/{namespace}"
+        response = requests.get(url)
+        return response.json()
+    except:
+        st.error("❌ Failed to fetch data")
+        return None
+
 
 # -----------------------
 # Sidebar
@@ -35,107 +33,100 @@ def fetch_logs(pod: str, namespace: str):
 st.sidebar.title("⚙️ Settings")
 
 namespaces = get_namespaces()
-selected_ns = st.sidebar.selectbox("Namespace", namespaces) if namespaces else "default"
 
-pods = get_pods(selected_ns)
-selected_pod = st.sidebar.selectbox("Pod", pods) if pods else ""
+if namespaces:
+    namespace = st.sidebar.selectbox("Namespace", namespaces)
+else:
+    namespace = st.sidebar.text_input("Namespace", "default")
 
-mode = st.sidebar.selectbox(
-    "Mode",
-    ["Paste Logs", "Fetch Pod Logs", "Namespace Analysis (🚀)"]
-)
+refresh = st.sidebar.button("🔄 Analyze")
 
 st.sidebar.markdown("---")
-st.sidebar.info("Analyze Kubernetes issues instantly")
+st.sidebar.info("AI-powered Kubernetes Debugger")
 
 # -----------------------
-# Logs Input Section
+# Header
 # -----------------------
-st.title("🚀 AI Kubernetes Log Analyzer")
+st.markdown("## 🚀 KubeAI – Intelligent Kubernetes Debugger")
+st.caption("AI-powered root cause analysis for Kubernetes workloads")
 
-if mode in ["Paste Logs", "Fetch Pod Logs"]:
-    st.subheader("📥 Input Logs")
+# -----------------------
+# Main Logic
+# -----------------------
+if refresh:
 
-    if mode == "Paste Logs":
-        logs = st.text_area("Paste your logs here", height=250)
+    data = fetch_data(namespace)
+
+    if not data or "total_pods" not in data:
+        st.error("❌ Invalid backend response")
+        st.stop()
+
+    total = data["total_pods"]
+    unhealthy = len([p for p in data["pods"] if p["status"] == "unhealthy"])
+    healthy = total - unhealthy
+
+    # -----------------------
+    # Summary
+    # -----------------------
+    st.subheader("📊 Cluster Summary")
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total Pods", total)
+    col2.metric("🟢 Healthy", healthy)
+    col3.metric("🔴 Unhealthy", unhealthy)
+
+    # 🔥 AI Summary Banner
+    if unhealthy > 0:
+        st.error(f"🚨 {unhealthy} pod(s) failing in namespace '{namespace}'")
     else:
-        logs = fetch_logs(selected_pod, selected_ns)
-        st.text_area(f"Logs from pod '{selected_pod}'", logs, height=300)
+        st.success("✅ All pods are healthy")
 
-    if not logs:
-        st.info("👆 Provide logs and click Analyze")
+    st.markdown("---")
 
-# -----------------------
-# Analyze Button
-# -----------------------
-if st.button("🔍 Analyze"):
+    # -----------------------
+    # Pods View
+    # -----------------------
+    st.subheader("📦 Pods Status")
 
-    # =====================================================
-    # 🚀 NEW: Namespace Analysis (REAL PRODUCT FEATURE)
-    # =====================================================
-    if mode == "Namespace Analysis (🚀)":
+    pods = sorted(
+        data["pods"],
+        key=lambda x: x["status"] != "unhealthy"
+    )
 
-        with st.spinner("Analyzing entire namespace..."):
-            url = f"http://127.0.0.1:8000/analyze-namespace/{selected_ns}"
-            response = requests.get(url)
-            data = response.json()
+    for pod in pods:
+        with st.container():
+            col1, col2 = st.columns([3, 1])
 
-        st.subheader(f"📦 Namespace: {data['namespace']}")
+            col1.markdown(f"### {pod['pod_name']}")
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("Total Pods", data["total_pods"])
-
-        total_issues = sum(len(p.get("issues_found", [])) for p in data["pods"])
-        with col2:
-            st.metric("Total Issues", total_issues)
-
-        st.markdown("---")
-
-        # Sort pods: problematic first
-        pods_sorted = sorted(
-            data["pods"],
-            key=lambda x: len(x.get("issues_found", [])),
-            reverse=True
-        )
-
-        for pod in pods_sorted:
-            pod_name = pod["pod_name"]
-            issues = pod.get("issues_found", [])
-
-            if issues:
-                st.error(f"🔴 {pod_name} - {len(issues)} issue(s)")
+            if pod["status"] == "healthy":
+                col2.success("🟢 Healthy")
+            elif pod["status"] == "unhealthy":
+                col2.error("🔴 Unhealthy")
             else:
-                st.success(f"🟢 {pod_name} - Healthy")
+                col2.warning("⚠️ Error")
 
-            with st.expander(f"Details: {pod_name}"):
+            # -----------------------
+            # Issues
+            # -----------------------
+            if pod["issues_found"]:
+                with st.expander("🔍 Issues"):
+                    for issue in pod["issues_found"]:
+                        st.text(issue.get("message"))
 
-                if issues:
-                    for issue in issues:
-                        st.code(issue)
-                else:
-                    st.write("No issues detected ✅")
+            # -----------------------
+            # AI Insights (🔥 Highlighted)
+            # -----------------------
+            if pod.get("ai_analysis"):
+                ai = pod["ai_analysis"]
 
-    # =====================================================
-    # 🟡 OLD FLOW: Single Log Analysis
-    # =====================================================
-    else:
-        if not logs.strip():
-            st.warning("Please provide logs first")
-        else:
-            with st.spinner("Analyzing logs..."):
-                result = analyze_logs(logs)
+                with st.expander("🧠 AI Insight", expanded=True):
+                    st.error(f"🚨 Issue: {ai.get('issue')}")
+                    st.write(f"🔍 Root Cause: {ai.get('root_cause')}")
+                    st.write(f"🛠 Fix: {ai.get('fix')}")
+                    st.caption(f"Confidence: {ai.get('confidence')}%")
 
-            st.subheader("📊 Analysis Result")
+            st.markdown("---")
 
-            col1, col2 = st.columns(2)
-
-            with col1:
-                st.metric("🚨 Issue", result.get("issue", result.get("summary", "N/A")))
-                st.metric("📊 Confidence", f"{result.get('confidence', 0)}%")
-
-            with col2:
-                st.metric("🧠 Root Cause", result.get("root_cause", "N/A"))
-
-            st.markdown("### 🛠 Recommended Fix")
-            st.success(result.get("fix", result.get("priority_action", "No suggestion available")))
+else:
+    st.info("👉 Select namespace and click 'Analyze'")

@@ -35,13 +35,30 @@ AI Insight:
 
 ## 📂 Project Structure
 
-kube-ai/  
-├── kube-ai-analyzer/   (Core engine: parser + AI)  
-├── backend/            (FastAPI backend)  
-├── frontend/           (Streamlit UI)  
-├── k8s/                (Kubernetes manifests)  
-
----
+```
+kube-ai/
+├── ai-engine/
+│   ├── app/
+│   │   ├── main.py
+│   │   └── analyzer.py
+│   ├── Dockerfile
+│   └── requirements.txt
+│
+├── backend/
+│   ├── app/
+│   │   ├── main.py
+│   │   ├── routes/
+│   │   └── services/
+│   ├── Dockerfile
+│   └── requirements.txt
+│
+├── k8s/
+│   ├── namespace.yaml
+│   ├── ai-engine/
+│   ├── backend/
+│
+└── README.md
+```
 
 ## 🚀 Getting Started
 
